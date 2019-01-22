@@ -1,0 +1,76 @@
+Option Explicit
+Private WithEvents inboxItems As Outlook.Items
+Private Sub Application_Startup()
+  Dim outlookApp As Outlook.Application
+  Dim objectNS As Outlook.NameSpace
+  
+  Set outlookApp = Outlook.Application
+  Set objectNS = outlookApp.GetNamespace("MAPI")
+  Set inboxItems = objectNS.GetDefaultFolder(olFolderInbox).Items
+End Sub
+Private Sub inboxItems_ItemAdd(ByVal Item As Object)
+On Error GoTo ErrorHandler
+Dim objAtt As Outlook.Attachment
+Dim saveFolder As String
+Dim dateFormat
+Dim MessageInfo
+Dim Result
+  Const OLTXT = 0
+  Dim sPath As String
+  Dim dtDate As Date
+  Dim sName As String
+  
+ dateFormat = Format(Now, "yyyy-mm-dd H-mm")
+saveFolder = "c:\outlook backup\"
+If TypeName(Item) = "MailItem" Then
+    MessageInfo = "" & _
+        "Sender : " & Item.SenderEmailAddress & vbCrLf & _
+        "Sent : " & Item.SentOn & vbCrLf & _
+        "Received : " & Item.ReceivedTime & vbCrLf & _
+        "Subject : " & Item.Subject & vbCrLf & _
+        "Size : " & Item.Size & vbCrLf & _
+        "Message Body : " & vbCrLf & Item.Body
+    Result = MsgBox(MessageInfo, vbOKOnly, "New Message Received")
+    '**************************************************************************************************************
+    'downloads attachment sent from particular email
+    'check particular email address
+    If Item.Sender.GetExchangeUser.PrimarySmtpAddress = "pooja.chaudhary@capgemini.com" Then
+    For Each objAtt In Item.Attachments
+     '     If InStr(objAtt.DisplayName, ".jpg") Then
+          objAtt.SaveAsFile saveFolder & "\" & objAtt.DisplayName
+     ' End If
+    Next
+     '**************************************************************************************************************
+     'downloads body as txt file
+      sName = Item.Subject
+      ReplaceCharsForFileName sName, "_"
+
+      dtDate = Item.ReceivedTime
+      sName = Format(dtDate, "yyyymmdd", vbUseSystemDayOfWeek, _
+       vbUseSystem) & Format(dtDate, "-hhnnss", _
+      vbUseSystemDayOfWeek, vbUseSystem) & "-" & sName & ".txt"
+
+  Item.SaveAs "C:\outlook backup\" & sName, OLTXT
+ '*****************************************************************************************************
+     End If
+End If
+ExitNewItem:
+    Exit Sub
+ErrorHandler:
+    MsgBox Err.Number & " - " & Err.Description
+    Resume ExitNewItem
+End Sub
+
+Private Sub ReplaceCharsForFileName(sName As String, _
+  sChr As String _
+)
+  sName = Replace(sName, "/", sChr)
+  sName = Replace(sName, "\", sChr)
+  sName = Replace(sName, ":", sChr)
+  sName = Replace(sName, "?", sChr)
+  sName = Replace(sName, Chr(34), sChr)
+  sName = Replace(sName, "<", sChr)
+  sName = Replace(sName, ">", sChr)
+  sName = Replace(sName, "|", sChr)
+End Sub
+
